@@ -1,14 +1,17 @@
-CC = g++
-CFLAGS = 
-LDFLAGS = -lstdc++
+# Compiler and flags
+CXX := g++
+CXXFLAGS := -Wall -Wextra -std=c++17
 
-all: p1
+# Name of the final executable
+TARGET := MSTgraph
 
-p1: MSTgraph.o
-	$(CC) $(CFLAGS) $(LDFLAGS) MSTgraph.o -o p1
+# Default rule: build the executable
+all: $(TARGET)
 
-MSTgraph.o: MSTgraph.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+# Rule to build the MSTgraph executable from MSTgraph.cpp
+$(TARGET): MSTgraph.cpp
+	$(CXX) $(CXXFLAGS) $< -o $@
 
+# Optional clean rule to remove generated files
 clean:
-	rm -f MSTgraph.o p1
+	rm -f $(TARGET)
