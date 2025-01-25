@@ -3,6 +3,7 @@
         "limits": "cpp",
         "string": "cpp",
         "cstring": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "*.tcc": "cpp"
     }
 }

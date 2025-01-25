@@ -5,7 +5,7 @@
 #   - client.cpp
 
 CXX = g++
-CXXFLAGS = -Wall -std=c++17
+CXXFLAGS = -Wall -std=c++17 -g -O0 -fprofile-arcs -ftest-coverage
 
 # Default target: build everything
 all: server_pipeline server_leader_follower client
@@ -24,4 +24,4 @@ client: client.cpp
 
 # Clean up build artifacts
 clean:
-	rm -f server_pipeline server_leader_follower client
+	rm -f server_pipeline server_leader_follower client *.gcno *.gcda *.gcov

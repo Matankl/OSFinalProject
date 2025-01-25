@@ -391,41 +391,52 @@ public:
     void stop() {
         {
             std::lock_guard<std::mutex> lk(lfMutex);
-            stopFlag=true;
+            stopFlag = true;   // Set the flag
         }
-        lfCond.notify_all();
-        close(serverFD);
+        lfCond.notify_all();   // Wake up any threads in accept()
+        
+        if (serverFD >= 0) {   // Close the listening socket if valid
+            close(serverFD);
+            serverFD = -1;
+        }
     }
+
 
 private:
     // Each thread runs threadLoop: tries to become leader, accept a connection, then processes it.
     void threadLoop() {
-        while(true) {
-            int clientFD=-1;
+        while (true) {
+            int clientFD = -1;
             {
                 std::unique_lock<std::mutex> lk(lfMutex);
-                // If I'm not supposed to stop, I'll be the leader.
-                if(stopFlag) {
+                
+                // Check if we are asked to stop before calling accept().
+                if (stopFlag) {
                     break;
                 }
-                // I'm the leader: call accept().
+
                 sockaddr_in cliAddr;
-                socklen_t clilen=sizeof(cliAddr);
-                clientFD = accept(serverFD,(sockaddr*)&cliAddr,&clilen);
-                if(clientFD<0){
-                    if(stopFlag) {
-                        break; 
+                socklen_t clilen = sizeof(cliAddr);
+                clientFD = accept(serverFD, (sockaddr*)&cliAddr, &clilen);
+
+                if (clientFD < 0) {
+                    // accept() failed or was interrupted
+                    if (stopFlag) {
+                        // If we're stopping, break out
+                        break;
                     }
-                    // else accept() error, but let's keep going
+                    // otherwise, keep looping
                     continue;
                 }
-                // Once we accept a client, we let another thread become the new leader:
-                lfCond.notify_one(); 
+
+                // Hand off "leader" role so another thread can accept next
+                lfCond.notify_one();
             }
 
-            // Now "this" thread can process the client
+            // Process the client outside the lock
             processClient(clientFD);
         }
+
     }
 };
 
@@ -440,10 +451,15 @@ int main(){
 
     // The main thread just waits. In a real application,
     // you might do something else or wait for a signal.
-    std::cout<<"[Server] Press Enter to stop...\n";
-    std::cin.get();
+    std::cout << "[Server] Press Enter to stop...\n";
+    
+    // Use getline instead of cin.get() to reliably detect an entire line
+    std::string dummy;
+    std::getline(std::cin, dummy);
 
-    server.stop();
-    std::cout<<"[Server] Stopped.\n";
+    std::cout << "[Server] Stopping server...\n";
+    server.stop();  // triggers stopFlag = true and closes socket
+    std::cout << "[Server] Stopped.\n";
     return 0;
 }
+
